@@ -13,7 +13,6 @@ from cogspaces.datasets.utils import get_data_dir, get_output_dir
 from cogspaces.model_selection import train_test_split
 from cogspaces.models.baseline import MultiLogisticClassifier
 from cogspaces.models.factored import FactoredClassifier
-from cogspaces.models.trace import TraceClassifier
 from cogspaces.preprocessing import MultiStandardScaler, MultiTargetEncoder
 from cogspaces.utils.callbacks import ScoreCallback, MultiCallback
 from cogspaces.utils.sacred import OurFileStorageObserver
@@ -35,25 +34,15 @@ def default():
     model = dict(
         normalize=True,
         estimator='factored',
-        study_weight='sqrt_sample',
+        study_weight='study',
         max_iter=100,
     )
     factored = dict(
-        optimizer='sgd',
-        shared_embedding_size=128,
-        private_embedding_size=0,
-        shared_embedding='hard',
-        skip_connection=False,
+        shared_embedding_size=100,
         batch_size=32,
         dropout=0.75,
-        activation='relu',
-        loss_weights=dict(contrast=1., adversarial=1.,
-                          penalty=1.),
-        lr=5e-3,
+        lr=1e-3,
         input_dropout=0.,
-    )
-    trace = dict(
-        trace_penalty=1e-1,
     )
     logistic = dict(
         l2_penalty=1e-3,
@@ -92,7 +81,7 @@ def load_data(source_dir, studies):
 
 
 @exp.main
-def train(system, model, factored, trace, logistic,
+def train(system, model, factored, logistic,
           _run, _seed):
     print(_seed)
     data, target = load_data()
@@ -118,11 +107,6 @@ def train(system, model, factored, trace, logistic,
                                        max_iter=model['max_iter'],
                                        seed=_seed,
                                        **factored)
-    elif model['estimator'] == 'trace':
-        estimator = TraceClassifier(verbose=system['verbose'],
-                                    max_iter=model['max_iter'],
-                                    step_size_multiplier=100000,
-                                    **trace)
     elif model['estimator'] == 'logistic':
         estimator = MultiLogisticClassifier(verbose=system['verbose'],
                                             max_iter=model['max_iter'],

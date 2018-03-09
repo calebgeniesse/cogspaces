@@ -76,7 +76,7 @@ def factored():
         verbose=50,
     )
     data = dict(
-        source_dir=join(get_data_dir(), 'reduced_512_icbm_gm'),
+        source_dir=join(get_data_dir(), 'reduced_512'),
         studies='all'
     )
 
@@ -86,16 +86,11 @@ def factored():
         study_weight='study',
         max_iter=500,
     )
-
     factored = dict(
-        optimizer='sgd',
-        shared_embedding_size=128,
-        private_embedding_size=0,
-        shared_embedding='hard',
-        skip_connection=False,
+        shared_embedding_size=100,
         batch_size=32,
         dropout=0.75,
-        lr=1e-2,
+        lr=1e-3,
         input_dropout=0.25,
     )
 
@@ -112,103 +107,20 @@ def run_exp(output_dir, config_updates, _id):
 
 
 if __name__ == '__main__':
-    grid = sys.argv[1]
-    if grid == 'trace':
-        output_dir = join(get_output_dir(), 'trace')
-        exp.config(trace)
-        trace_penalties = np.logspace(-4, -1, 15)
-        config_updates = ParameterGrid({'trace.trace_penalty':
-                                            trace_penalties})
-        _id = get_id(output_dir)
-        Parallel(n_jobs=15, verbose=100)(delayed(run_exp)(output_dir,
-                                                          config_update,
-                                                          _id=_id + i)
-                                         for i, config_update
-                                         in enumerate(config_updates))
-    elif grid == 'factored_dropout':
-        output_dir = join(get_output_dir(), 'factored_dropout')
-
-        exp.config(factored_dropout)
-        dropouts = [0.70, 0.80, 0.90]
-        embedding_sizes = [100, 200, 300, 400, 'auto']
-        study_weights = ['sqrt_sample', 'study']
-        config_updates = ParameterGrid({'factored.dropout':
-                                            dropouts,
-                                        'factored.embedding_size':
-                                            embedding_sizes,
-                                        'model.study_weight': study_weights})
-        _id = get_id(output_dir)
-        Parallel(n_jobs=30, verbose=100)(delayed(run_exp)(output_dir,
-                                                          config_update,
-                                                          _id=_id + i)
-                                         for i, config_update
-                                         in enumerate(config_updates))
-    elif grid == 'factored_l2':
-        output_dir = join(get_output_dir(), 'factored_l2')
-        exp.config(factored_l2)
-        l2_penalties = np.logspace(-4, -1, 15)
-        config_updates = ParameterGrid({'factored.l2_penalty':
-                                            l2_penalties})
-        _id = get_id(output_dir)
-        Parallel(n_jobs=15, verbose=100)(delayed(run_exp)(output_dir,
-                                                          config_update,
-                                                          _id=_id + i)
-                                         for i, config_update
-                                         in enumerate(config_updates))
-    elif grid == 'factored':
-        output_dir = join(get_output_dir(), 'factored')
-        exp.config(factored)
-        config_updates = list(ParameterGrid({'factored.dropout': [0.75, 0.875],
-                                             'factored.shared_embedding_size':
-                                                 [128, 256],
-                                             'factored.private_embedding_size':
-                                                 [0, 16],
-                                             'factored.shared_embedding':
-                                                 ['hard', 'hard+adversarial'],
-                                             'factored.optimizer':
-                                                 ['adam', 'sgd'],
-                                             'model.study_weight':
-                                                 ['study', 'sqrt_sample']
-                                             }))
-        for config_update in config_updates:
-            if config_update['factored.optimizer'] == 'adam':
-                config_update['factored.lr'] = 1e-3
-            else:
-                config_update['factored.lr'] = 1e-2
-    elif grid == 'factored_5':
-        output_dir = join(get_output_dir(), 'factored_5')
-        exp.config(factored)
-        config_updates = []
-        for optimizer in ['adam', 'sgd']:
-            config_updates += list(
-                ParameterGrid({'factored.dropout': [0.75, 0.875],
-                               'factored.shared_embedding_size': [256, 512],
-                               'factored.private_embedding_size': [0],
-                               'factored.shared_embedding': ['hard'],
-                               'factored.optimizer': [optimizer],
-                               'factored.lr': [1e-3, 2e-3, 5e-3]
-                               if optimizer == 'sgd' else [1e-3],
-                               'model.study_weight': ['sqrt_sample']
-                               }))
-        _id = get_id(output_dir)
-    elif grid == 'factored_4':
-        output_dir = join(get_output_dir(), 'factored_4')
-        exp.config(factored)
-        config_updates = []
-        config_updates += list(
-            ParameterGrid({'factored.dropout': [15 / 16],
-                           'factored.shared_embedding_size': [512],
-                           'factored.private_embedding_size': [0],
-                           'factored.shared_embedding':
-                               ['hard'],
-                           'factored.optimizer': ['adam', 'sgd'],
-                           'factored.lr': [5e-3, 1e-3],
-                           'model.study_weight':
-                               ['sqrt_sample']
-                           }))
-        _id = get_id(output_dir)
-    else:
-        raise ValueError('Wrong argument')
+    output_dir = join(get_output_dir(), 'factored')
+    exp.config(factored)
+    config_updates = []
+    config_updates += list(
+        ParameterGrid({'data.studies': [['archi'],
+                                            ['archi', 'hcp'],
+                                            ['brainomics'],
+                                            ['brainomics', 'hcp'],
+                                            ['camcan'],
+                                            ['camcan', 'hcp'],
+                                            ['la5c'],
+                                            ['la5c', 'hcp']],
+                       }))
+    _id = get_id(output_dir)
     Parallel(n_jobs=32, verbose=100)(delayed(run_exp)(output_dir,
                                                       config_update,
                                                       _id=_id + i)

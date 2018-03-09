@@ -31,7 +31,7 @@ def fetch_contrasts(study, data_dir=None):
 def fetch_all(data_dir=None):
     dfs = []
     for study in ['archi', 'brainomics', 'camcan', 'hcp',
-                  'la5c', 'brainpedia']:
+                  'la5c']:
         df = fetch_contrasts(study, data_dir=data_dir)
         dfs.append(df)
     df = pd.concat(dfs)
@@ -235,46 +235,6 @@ def fetch_la5c(data_dir=None):
                  inplace=True)
     df.sort_index(inplace=True)
     return df
-
-
-def fetch_brainpedia(data_dir=None, drop_some=True):
-    data_dir = get_data_dir(data_dir)
-    source_dir = join(data_dir, 'brainpedia')
-    if not os.path.exists(source_dir):
-        raise ValueError(
-            'Please ensure that %s contains all required data.'
-            % source_dir)
-    studies = os.listdir(source_dir)
-    rec = []
-    for study in studies:
-        if 'archi' in study:
-            continue
-        study_dir = join(source_dir, study)
-        subjects = os.listdir(study_dir)
-        for subject in subjects:
-            if subject == 'models':
-                continue
-            subject_dir = join(study_dir, subject, 'model', 'model002',
-                               'z_maps')
-            subject = int(subject[3:])
-            maps = os.listdir(subject_dir)
-            for this_map in maps:
-                task = int(this_map[4:7])
-                contrast = this_map[8:-7]
-                rec.append({'study': study,
-                            'subject': subject,
-                            'task': task,
-                            'direction': 'level2',
-                            'contrast': contrast,
-                            'z_map': join(subject_dir, this_map)})
-    df = pd.DataFrame(rec)
-    df.set_index(['study', 'subject', 'task', 'contrast', 'direction'],
-                 inplace=True)
-    if drop_some:
-        df.drop('pinel2007fast', level=0, axis=0, inplace=True)
-        df.drop('ds102', level=0, axis=0, inplace=True)
-    return df
-
 
 def fetch_hcp(data_dir=None, n_subjects=None, subjects=None,
               from_file=True):
