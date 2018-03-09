@@ -64,9 +64,8 @@ class MultiTaskModule(nn.Module):
                 embedding = self.dropout(self.shared_embedder(sub_input))
             else:
                 embedding = sub_input
-            embedding = torch.cat(embedding, dim=1)
             pred = self.classifiers[study](embedding)
-            pred = F.softmax(pred, dim=1)
+            pred = F.log_softmax(pred, dim=1)
             preds[study] = pred
         return preds
 
@@ -95,8 +94,8 @@ class MultiTaskLoss(nn.Module):
                 targets: Dict[str, torch.LongTensor]) -> torch.FloatTensor:
         loss = 0
         for study in inputs:
-            study_pred, pred, penalty = inputs[study]
-            study_target, target = targets[study][:, 0], targets[study][:, 1]
+            pred = inputs[study]
+            target = targets[study][:, 1]
 
             loss += nll_loss(pred, target,
                              size_average=True) * self.study_weights[study]

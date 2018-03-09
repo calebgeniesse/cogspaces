@@ -34,7 +34,6 @@ def default():
     model = dict(
         normalize=True,
         estimator='factored',
-        study_weight='study',
         max_iter=100,
     )
     factored = dict(
@@ -83,7 +82,6 @@ def load_data(source_dir, studies):
 @exp.main
 def train(system, model, factored, logistic,
           _run, _seed):
-    print(_seed)
     data, target = load_data()
 
     target_encoder = MultiTargetEncoder().fit(target)
@@ -99,7 +97,7 @@ def train(system, model, factored, logistic,
     else:
         standard_scaler = None
 
-    study_weights = get_study_weights(model['study_weight'], train_data)
+    study_weights = {study: 1. for study in train_data}
 
     if model['estimator'] == 'factored':
         estimator = FactoredClassifier(verbose=system['verbose'],
@@ -144,29 +142,6 @@ def train(system, model, factored, logistic,
                                       keys=['pred', 'true'], names=['target'])
     save_output(target_encoder, standard_scaler, estimator, test_preds)
     return test_scores
-
-
-def get_study_weights(study_weight, train_data):
-    if study_weight == 'sqrt_sample':
-        study_weights = np.array(
-            [sqrt(len(train_data[study])) for study in train_data])
-        s = np.sum(study_weights)
-        study_weights /= s / len(train_data)
-        study_weights = {study: weight for study, weight in zip(train_data,
-                                                                study_weights)}
-    elif study_weight == 'sample':
-        study_weights = np.array(
-            [float(len(train_data[study])) for study in train_data])
-        s = float(np.sum(study_weights))
-        study_weights /= s / len(train_data)
-        study_weights = {study: weight for study, weight in zip(train_data,
-                                                                study_weights)}
-    elif study_weight == 'study':
-        study_weights = {study: 1. for study in train_data}
-    else:
-        raise ValueError
-    return study_weights
-
 
 if __name__ == '__main__':
     output_dir = join(get_output_dir(), 'multi_studies')

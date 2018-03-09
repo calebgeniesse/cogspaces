@@ -46,6 +46,5 @@ def compute_components(output_dir, lstsq):
 
 
 if __name__ == '__main__':
-    # compute_components(join(get_output_dir(), 'multi_studies', '57'))
-    compute_components(join(get_output_dir(), 'multi_studies', '107'),
+    compute_components(join(get_output_dir(), 'multi_studies', '1'),
                        lstsq=True)
